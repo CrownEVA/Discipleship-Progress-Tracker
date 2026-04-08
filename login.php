@@ -1,28 +1,87 @@
-<?php include 'links.php'; ?>
+<?php
+session_start();
+include 'links.php';
+include 'database.php';
 
-<div class="d-flex justify-content-center align-items-center vh-100">
-    <div class="border rounded-3 border-primary p-4 w-50">
-        <h3 class="m-0">Login</h3>
+$errors = [];
+$email = "";
+
+if (isset($_SESSION["user_id"])) {
+    header("Location: dashboard.php");
+    exit;
+}
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $email = trim($_POST["email"] ?? '');
+    $password = $_POST["password"] ?? '';
+
+    if ($email === "") {
+        $errors[] = "Email is required.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = "Invalid email format.";
+    }
+
+    if ($password === "") {
+        $errors[] = "Password is required.";
+    }
+
+    if (empty($errors)) {
+        $stmt = $conn->prepare("SELECT id, first_name, last_name, email, password FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        if ($user && password_verify($password, $user["password"])) {
+            session_regenerate_id(true);
+            $_SESSION["user_id"] = $user["id"];
+            $_SESSION["user_name"] = $user["first_name"] . " " . $user["last_name"];
+            $_SESSION["user_email"] = $user["email"];
+
+            header("Location: home.php");
+            exit;
+        } else {
+            $errors[] = "Invalid email or password.";
+        }
+    }
+}
+?>
+
+<div class="d-flex justify-content-center align-items-center vh-100 bg-primary">
+    <div class="border rounded-3 border-primary p-4 w-25 bg-white">
+        <h3 class="m-0">Sign In</h3>
         <br>
-        <form>
+
+        <?php if (isset($_SESSION["success"])): ?>
+            <div class="alert alert-success">
+                <?= htmlspecialchars($_SESSION["success"]) ?>
+            </div>
+            <?php unset($_SESSION["success"]); ?>
+        <?php endif; ?>
+
+        <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger">
+                <?php foreach ($errors as $error): ?>
+                    <div><?= htmlspecialchars($error) ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+        <form method="POST" action="">
             <div class="form-group">
-                <label for="exampleInputEmail1">Email address</label>
-                <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
-                <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+                <label>Email</label>
+                <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($email) ?>" placeholder="Enter email">
             </div>
             <br>
+
             <div class="form-group">
-                <label for="exampleInputPassword1">Password</label>
-                <input type="password" class="form-control" id="exampleInputPassword1">
+                <label>Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Password">
             </div>
             <br>
-            <div class="form-group form-check">
-                <input type="checkbox" class="form-check-input" id="exampleCheck1">
-                <label class="form-check-label" for="exampleCheck1">Check me out</label>
+
+            <button type="submit" class="btn btn-primary w-100">Submit</button>
+            <div class="text-center mt-2">
+                <p class="p-0 m-0">Don't have an account? <a href="register.php">Sign Up</a></p>
             </div>
-            <br>
-            <button type="submit" class="btn btn-primary">Submit</button>
         </form>
     </div>
 </div>
-

@@ -1,13 +1,21 @@
-<?php include 'links.php'; ?>
+<?php
+session_start();
+include 'links.php';
+
+if (!isset($_SESSION["user_id"])) {
+    header("Location: login.php");
+    exit;
+}
+?>
 
 <header>
     <nav class="navbar bg-body-tertiary">
         <div class="container">
-            <a class="navbar-brand" href="#">
+            <a class="navbar-brand" href="account.php">
                 <img src="/docs/5.3/assets/brand/bootstrap-logo.svg" alt="Bootstrap" width="30" height="24">
             </a>
             <div class="align-items-center d-flex flex-column">
-                <h5 class="m-0">Good morning Naila</h5>
+                <h5 class="m-0">Welcome, <?= htmlspecialchars($_SESSION["user_name"]) ?>!</h5>
                 <span>Are you ready to win souls day?</span>
             </div>
             <a href=""><i class="fa-regular fa-bell"></i></a>
