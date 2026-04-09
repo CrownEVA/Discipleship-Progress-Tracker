@@ -164,7 +164,7 @@ if (!empty($lessons)) {
 
                     <div class="col-md-6">
                         <label class="form-label">Content</label>
-                        <input type="text" name="content" class="form-control" required>
+                        <textarea name="content" class="form-control" rows="4" required></textarea>
                     </div>
                 </div>
 
@@ -220,7 +220,7 @@ if (!empty($lessons)) {
 
                                     <div class="col-md-6">
                                         <label class="form-label">Content</label>
-                                        <input type="text" name="content" class="form-control" value="<?= htmlspecialchars($lesson['content'], ENT_QUOTES) ?>" required>
+                                        <textarea name="content" class="form-control" rows="4" required><?= htmlspecialchars($lesson['content']) ?></textarea>
                                     </div>
                                 </div>
 
