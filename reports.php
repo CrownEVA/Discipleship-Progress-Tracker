@@ -108,11 +108,12 @@ $nextLevelPoints = $levelInfo['points_to_next'];
 <header>
     <nav class="sticky-top bg-white py-3">
         <div class="container">
-            <div class="align-items-center d-flex justify-content-between">
+            <div class="d-flex justify-content-between align-items-center">
                 <a href="home.php">
                     <i class="fa-solid fa-chevron-left"></i>
                 </a>
                 <h5>My Points</h5>
+                <div></div>
             </div>
         </div>
     </nav>

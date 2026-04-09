@@ -9,32 +9,216 @@ if (!isset($_SESSION["user_id"])) {
 }
 
 $userId = (int) $_SESSION["user_id"];
+$isAdmin = isset($_SESSION["user_role"]) && $_SESSION["user_role"] === "admin";
+
 $search = trim($_GET["q"] ?? '');
 $searchLike = '%' . $search . '%';
 
+date_default_timezone_set('Asia/Manila');
+
+function getLevelInfo(int $points): array
+{
+    $levels = [
+        ['name' => 'New Believer', 'min' => 0],
+        ['name' => 'Growing Disciple', 'min' => 100],
+        ['name' => 'Faith Builder', 'min' => 250],
+        ['name' => 'Servant Leader', 'min' => 500],
+        ['name' => 'Kingdom Worker', 'min' => 1000],
+        ['name' => 'Disciple Maker', 'min' => 2000],
+        ['name' => 'Spiritual Mentor', 'min' => 4000],
+    ];
+
+    $current = $levels[0];
+    $next = null;
+
+    foreach ($levels as $index => $level) {
+        if ($points >= $level['min']) {
+            $current = $level;
+            $next = $levels[$index + 1] ?? null;
+        }
+    }
+
+    $progress = 100;
+    $pointsToNext = 0;
+
+    if ($next) {
+        $range = $next['min'] - $current['min'];
+        $earned = $points - $current['min'];
+        $progress = $range > 0 ? (int) floor(($earned / $range) * 100) : 100;
+        $progress = max(0, min(100, $progress));
+        $pointsToNext = max(0, $next['min'] - $points);
+    }
+
+    return [
+        'name' => $current['name'],
+        'min' => $current['min'],
+        'next_name' => $next['name'] ?? null,
+        'next_min' => $next['min'] ?? null,
+        'progress_to_next' => $progress,
+        'points_to_next' => $pointsToNext,
+    ];
+}
+
+$uploadDir = 'uploads/journeys/';
+if (!is_dir($uploadDir)) {
+    mkdir($uploadDir, 0777, true);
+}
+
+function saveJourneyImage(array $file, string $uploadDir): ?string
+{
+    if (!isset($file['tmp_name']) || !isset($file['error']) || $file['error'] !== UPLOAD_ERR_OK) {
+        return null;
+    }
+
+    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+    if (!in_array($ext, $allowed, true)) {
+        return null;
+    }
+
+    $newName = uniqid('journey_', true) . '.' . $ext;
+    $target = $uploadDir . $newName;
+
+    if (move_uploaded_file($file['tmp_name'], $target)) {
+        return $target;
+    }
+
+    return null;
+}
+
+/* Admin journey actions */
+if ($_SERVER["REQUEST_METHOD"] === "POST" && $isAdmin && isset($_POST["action"])) {
+    $action = $_POST["action"];
+
+    try {
+        if ($action === "create_journey") {
+            $title = trim($_POST["title"] ?? '');
+            $description = trim($_POST["description"] ?? '');
+            $imagePath = saveJourneyImage($_FILES["image"] ?? [], $uploadDir);
+
+            if ($title !== '' && $description !== '' && $imagePath) {
+                $stmt = $conn->prepare("
+                    INSERT INTO journeys (title, description, image)
+                    VALUES (?, ?, ?)
+                ");
+                $stmt->execute([$title, $description, $imagePath]);
+            }
+
+            header("Location: journeys.php");
+            exit;
+        }
+
+        if ($action === "update_journey") {
+            $journeyId = (int) ($_POST["journey_id"] ?? 0);
+            $title = trim($_POST["title"] ?? '');
+            $description = trim($_POST["description"] ?? '');
+
+            $stmt = $conn->prepare("SELECT image FROM journeys WHERE id = ?");
+            $stmt->execute([$journeyId]);
+            $existingJourney = $stmt->fetch();
+
+            if ($journeyId > 0 && $title !== '' && $description !== '' && $existingJourney) {
+                $imagePath = $existingJourney['image'];
+
+                if (!empty($_FILES["image"]["name"])) {
+                    $newImage = saveJourneyImage($_FILES["image"], $uploadDir);
+                    if ($newImage) {
+                        $imagePath = $newImage;
+                    }
+                }
+
+                $stmt = $conn->prepare("
+                    UPDATE journeys
+                    SET title = ?, description = ?, image = ?
+                    WHERE id = ?
+                ");
+                $stmt->execute([$title, $description, $imagePath, $journeyId]);
+            }
+
+            header("Location: journeys.php");
+            exit;
+        }
+
+        if ($action === "delete_journey") {
+            $journeyId = (int) ($_POST["journey_id"] ?? 0);
+
+            if ($journeyId > 0) {
+                $conn->beginTransaction();
+
+                $stmt = $conn->prepare("
+                    DELETE ulp
+                    FROM user_lesson_progress ulp
+                    INNER JOIN lessons l ON l.id = ulp.lesson_id
+                    WHERE l.journey_id = ?
+                ");
+                $stmt->execute([$journeyId]);
+
+                $stmt = $conn->prepare("DELETE FROM lessons WHERE journey_id = ?");
+                $stmt->execute([$journeyId]);
+
+                $stmt = $conn->prepare("DELETE FROM user_journeys WHERE journey_id = ?");
+                $stmt->execute([$journeyId]);
+
+                $stmt = $conn->prepare("DELETE FROM journeys WHERE id = ?");
+                $stmt->execute([$journeyId]);
+
+                $conn->commit();
+            }
+
+            header("Location: journeys.php");
+            exit;
+        }
+    } catch (Throwable $e) {
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
+        die("Journey action failed: " . $e->getMessage());
+    }
+}
+
 /* Discover journeys */
-$stmt = $conn->prepare("
-    SELECT
-        j.id,
-        j.image,
-        j.title,
-        j.description,
-        COUNT(DISTINCT l.id) AS lesson_count,
-        COUNT(DISTINCT uj_all.user_id) AS enrolled_users
-    FROM journeys j
-    LEFT JOIN lessons l ON l.journey_id = j.id
-    LEFT JOIN user_journeys uj_all ON uj_all.journey_id = j.id
-    WHERE (j.title LIKE ? OR j.description LIKE ?)
-      AND NOT EXISTS (
-          SELECT 1
-          FROM user_journeys uj_me
-          WHERE uj_me.journey_id = j.id
-            AND uj_me.user_id = ?
-      )
-    GROUP BY j.id, j.image, j.title, j.description
-    ORDER BY j.id DESC
-");
-$stmt->execute([$searchLike, $searchLike, $userId]);
+if ($isAdmin) {
+    $stmt = $conn->prepare("
+        SELECT
+            j.id,
+            j.image,
+            j.title,
+            j.description,
+            COUNT(DISTINCT l.id) AS lesson_count,
+            COUNT(DISTINCT uj_all.user_id) AS enrolled_users
+        FROM journeys j
+        LEFT JOIN lessons l ON l.journey_id = j.id
+        LEFT JOIN user_journeys uj_all ON uj_all.journey_id = j.id
+        WHERE (j.title LIKE ? OR j.description LIKE ?)
+        GROUP BY j.id, j.image, j.title, j.description
+        ORDER BY j.id DESC
+    ");
+    $stmt->execute([$searchLike, $searchLike]);
+} else {
+    $stmt = $conn->prepare("
+        SELECT
+            j.id,
+            j.image,
+            j.title,
+            j.description,
+            COUNT(DISTINCT l.id) AS lesson_count,
+            COUNT(DISTINCT uj_all.user_id) AS enrolled_users
+        FROM journeys j
+        LEFT JOIN lessons l ON l.journey_id = j.id
+        LEFT JOIN user_journeys uj_all ON uj_all.journey_id = j.id
+        WHERE (j.title LIKE ? OR j.description LIKE ?)
+          AND NOT EXISTS (
+              SELECT 1
+              FROM user_journeys uj_me
+              WHERE uj_me.journey_id = j.id
+                AND uj_me.user_id = ?
+          )
+        GROUP BY j.id, j.image, j.title, j.description
+        ORDER BY j.id DESC
+    ");
+    $stmt->execute([$searchLike, $searchLike, $userId]);
+}
 $discoverJourneys = $stmt->fetchAll();
 
 /* My journeys */
@@ -55,7 +239,7 @@ $stmt = $conn->prepare("
     WHERE uj.user_id = ?
       AND uj.status <> 'unenrolled'
       AND (j.title LIKE ? OR j.description LIKE ?)
-    GROUP BY j.id, j.image, j.title, j.description, uj.status, uj.progress_percent, uj.id
+    GROUP BY j.id, j.image, j.title, j.description, uj.status, uj.progress_percent, uj.id, uj.enrolled_at
     ORDER BY uj.enrolled_at DESC
 ");
 $stmt->execute([$userId, $searchLike, $searchLike]);
@@ -84,9 +268,11 @@ $myJourneys = $stmt->fetchAll();
 .active-tab {
     border-bottom: 2px solid #0d6efd;
 }
+
 .journey-section {
     display: none;
 }
+
 .journey-section.active {
     display: block;
 }
@@ -100,6 +286,7 @@ $myJourneys = $stmt->fetchAll();
                     <i class="fa-solid fa-chevron-left text-black"></i>
                 </a>
                 <h5 class="mb-0 text-primary">Journeys</h5>
+                <div></div>
             </div>
 
             <form class="search-container m-0" role="search" method="GET" action="">
@@ -127,6 +314,14 @@ $myJourneys = $stmt->fetchAll();
 
 <body class="bg-body-tertiary">
     <div class="container mt-4 journey-section active" id="discoverSection">
+        <?php if ($isAdmin): ?>
+            <div class="d-flex justify-content-end mb-3">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addJourneyModal">
+                    <i class="fa-solid fa-plus"></i> Add Journey
+                </button>
+            </div>
+        <?php endif; ?>
+
         <?php if (empty($discoverJourneys)): ?>
             <div class="alert alert-light border">No journeys found.</div>
         <?php endif; ?>
@@ -167,7 +362,11 @@ $myJourneys = $stmt->fetchAll();
                             </div>
 
                             <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
-                                <i class="fa-solid fa-plus"></i>
+                                <?php if ($isAdmin): ?>
+                                    <i class="fa-solid fa-gear"></i>
+                                <?php else: ?>
+                                    <i class="fa-solid fa-plus"></i>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
@@ -203,18 +402,128 @@ $myJourneys = $stmt->fetchAll();
                                 <h5>Description</h5>
                                 <p id="discoverModalDescription"></p>
                             </div>
+
+                            <input type="hidden" id="currentJourneyId">
+                            <input type="hidden" id="currentJourneyTitle">
+                            <input type="hidden" id="currentJourneyDescription">
+                            <input type="hidden" id="currentJourneyImage">
                         </div>
                     </div>
 
-                    <div class="modal-footer p-3">
-                        <form method="POST" action="enroll_journey.php" class="w-100 m-0">
+                    <div class="modal-footer d-flex flex-wrap gap-2">
+                        <form method="POST" action="enroll_journey.php" class="flex-fill m-0">
                             <input type="hidden" name="journey_id" id="discoverJourneyId">
-                            <button type="submit" class="btn btn-primary w-100" id="discoverModalButton">Start Journey</button>
+                            <button type="submit" class="btn btn-primary w-100">Start Journey</button>
                         </form>
+
+                        <?php if ($isAdmin): ?>
+                            <button type="button" class="btn btn-warning flex-fill" id="openUpdateJourneyBtn">
+                                Update
+                            </button>
+                            <button type="button" class="btn btn-danger flex-fill" id="openDeleteJourneyBtn">
+                                Delete
+                            </button>
+                            <a href="#" class="btn btn-outline-secondary flex-fill" id="manageLessonsBtn">
+                                Manage Lessons
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
         </div>
+
+        <?php if ($isAdmin): ?>
+        <div class="modal fade" id="addJourneyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="POST" action="" enctype="multipart/form-data">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Journey</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="action" value="create_journey">
+
+                            <div class="mb-3">
+                                <label>Title</label>
+                                <input type="text" name="title" class="form-control" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Description</label>
+                                <textarea name="description" class="form-control" rows="4" required></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Image</label>
+                                <input type="file" name="image" class="form-control" accept="image/*" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Save Journey</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="updateJourneyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="POST" action="" enctype="multipart/form-data">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Update Journey</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="action" value="update_journey">
+                            <input type="hidden" name="journey_id" id="updateJourneyId">
+
+                            <div class="mb-3">
+                                <label>Title</label>
+                                <input type="text" name="title" id="updateJourneyTitle" class="form-control" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Description</label>
+                                <textarea name="description" id="updateJourneyDescription" class="form-control" rows="4" required></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Replace Image</label>
+                                <input type="file" name="image" class="form-control" accept="image/*">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-warning">Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="deleteJourneyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form method="POST" action="">
+                        <div class="modal-header">
+                            <h5 class="modal-title text-danger">Delete Journey</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="action" value="delete_journey">
+                            <input type="hidden" name="journey_id" id="deleteJourneyId">
+                            <p>Are you sure you want to delete <strong id="deleteJourneyTitle"></strong>?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 
     <div class="container mt-4 journey-section" id="myJourneysSection">
@@ -223,9 +532,7 @@ $myJourneys = $stmt->fetchAll();
         <?php endif; ?>
 
         <?php foreach ($myJourneys as $journey): ?>
-            <?php
-                $progress = (int) $journey['progress_percent'];
-            ?>
+            <?php $progress = (int) $journey['progress_percent']; ?>
             <div
                 class="card mb-3 journey-card-my"
                 data-bs-toggle="modal"
@@ -236,7 +543,6 @@ $myJourneys = $stmt->fetchAll();
                 data-description="<?= htmlspecialchars($journey['description'], ENT_QUOTES) ?>"
                 data-image="<?= htmlspecialchars($journey['image'], ENT_QUOTES) ?>"
                 data-lessons="<?= (int) $journey['lesson_count'] ?>"
-                data-users="0"
                 data-progress="<?= $progress ?>"
             >
                 <div class="row g-0">
@@ -375,13 +681,51 @@ document.querySelectorAll('.journey-card').forEach(card => {
         document.getElementById('discoverModalUsers').textContent = this.dataset.users + ' users';
         document.getElementById('discoverModalDescription').textContent = this.dataset.description;
         document.getElementById('discoverJourneyId').value = this.dataset.journeyId;
-        document.getElementById('discoverModalButton').textContent = 'Start Journey';
+
+        document.getElementById('currentJourneyId').value = this.dataset.journeyId;
+        document.getElementById('currentJourneyTitle').value = this.dataset.title;
+        document.getElementById('currentJourneyDescription').value = this.dataset.description;
+        document.getElementById('currentJourneyImage').value = this.dataset.image;
+
+        <?php if ($isAdmin): ?>
+        document.getElementById('updateJourneyId').value = this.dataset.journeyId;
+        document.getElementById('updateJourneyTitle').value = this.dataset.title;
+        document.getElementById('updateJourneyDescription').value = this.dataset.description;
+
+        document.getElementById('deleteJourneyId').value = this.dataset.journeyId;
+        document.getElementById('deleteJourneyTitle').textContent = this.dataset.title;
+
+        document.getElementById('manageLessonsBtn').href = 'manage_lessons.php?journey_id=' + this.dataset.journeyId;
+        <?php endif; ?>
     });
 });
 
-const myJourneyModal = document.getElementById('myJourneyModal');
+<?php if ($isAdmin): ?>
+document.getElementById('openUpdateJourneyBtn').addEventListener('click', function () {
+    document.getElementById('updateJourneyId').value = document.getElementById('currentJourneyId').value;
+    document.getElementById('updateJourneyTitle').value = document.getElementById('currentJourneyTitle').value;
+    document.getElementById('updateJourneyDescription').value = document.getElementById('currentJourneyDescription').value;
 
-myJourneyModal.addEventListener('show.bs.modal', function (event) {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('discoverJourneyModal')).hide();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('updateJourneyModal')).show();
+});
+
+document.getElementById('openDeleteJourneyBtn').addEventListener('click', function () {
+    document.getElementById('deleteJourneyId').value = document.getElementById('currentJourneyId').value;
+    document.getElementById('deleteJourneyTitle').textContent = document.getElementById('currentJourneyTitle').value;
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('discoverJourneyModal')).hide();
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteJourneyModal')).show();
+});
+
+document.getElementById('manageLessonsBtn').addEventListener('click', function (e) {
+    e.preventDefault();
+    const journeyId = document.getElementById('currentJourneyId').value;
+    window.location.href = 'manage_lessons.php?journey_id=' + journeyId;
+});
+<?php endif; ?>
+
+document.getElementById('myJourneyModal').addEventListener('show.bs.modal', function (event) {
     const card = event.relatedTarget;
 
     document.getElementById('myModalImage').src = card.dataset.image;
