@@ -1,5 +1,7 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Manila');
+
 include 'links.php';
 include 'database.php';
 
@@ -7,7 +9,7 @@ $errors = [];
 $email = "";
 
 if (isset($_SESSION["user_id"])) {
-    header("Location: dashboard.php");
+    header("Location: home.php");
     exit;
 }
 
@@ -76,6 +78,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <div class="form-group">
                 <label>Password</label>
                 <input type="password" name="password" class="form-control" placeholder="Password">
+            </div>
+            <div class="text-end">
+                <a href="forgot_password.php" class="text-decoration-none text-muted small">Forgot Password?</a>
             </div>
             <br>
 

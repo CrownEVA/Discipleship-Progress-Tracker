@@ -1,9 +1,13 @@
 <?php
 session_start();
+date_default_timezone_set('Asia/Manila');
+
 include 'links.php';
 include 'database.php';
+include 'mailer.php';
 
 $errors = [];
+$success = "";
 $first_name = "";
 $last_name = "";
 $email = "";
@@ -42,19 +46,42 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     if (empty($errors)) {
-        // Check if email already exists
         $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
         $stmt->execute([$email]);
+        $existingUser = $stmt->fetch();
 
-        if ($stmt->fetch()) {
-            $errors[] = "Email is already registered.";
+        $stmt = $conn->prepare("SELECT id FROM pending_registrations WHERE email = ?");
+        $stmt->execute([$email]);
+        $pending = $stmt->fetch();
+
+        if ($existingUser || $pending) {
+            $errors[] = "Email is already registered or waiting for verification.";
         } else {
-            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $token = bin2hex(random_bytes(32));
+            $tokenHash = hash('sha256', $token);
+            $expiresAt = date('Y-m-d H:i:s', strtotime('+30 minutes'));
+            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-            $stmt = $conn->prepare("INSERT INTO users (first_name, last_name, email, password, role) VALUES (?, ?, ?, ?, 'user')");
-            $stmt->execute([$first_name, $last_name, $email, $hashedPassword]);
+            $stmt = $conn->prepare("
+                INSERT INTO pending_registrations
+                (first_name, last_name, email, password_hash, token_hash, expires_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$first_name, $last_name, $email, $passwordHash, $tokenHash, $expiresAt]);
 
-            $_SESSION["success"] = "Registration successful. Please log in.";
+            $verifyLink = "http://localhost/Discipleship-Progress-Tracker/verify_registration.php?token=" . urlencode($token);
+
+            $subject = "Verify your email";
+            $message = "
+                <p>Hello " . htmlspecialchars($first_name) . ",</p>
+                <p>Please verify your email to complete registration.</p>
+                <p><a href='{$verifyLink}'>Verify Account</a></p>
+                <p>This link expires in 30 minutes.</p>
+            ";
+
+            sendMail($email, $subject, $message);
+
+            $_SESSION["success"] = "We sent a verification link to your email. Please check your inbox.";
             header("Location: login.php");
             exit;
         }

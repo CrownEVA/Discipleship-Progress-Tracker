@@ -168,6 +168,29 @@ try {
                 $_SESSION['points_flash'] = 10;
             }
         }
+
+        $stmt = $conn->prepare("
+            SELECT j.title AS journey_title, l.title AS lesson_title
+            FROM lessons l
+            INNER JOIN journeys j ON j.id = l.journey_id
+            WHERE l.id = ?
+        ");
+        $stmt->execute([$lessonId]);
+        $row = $stmt->fetch();
+
+        $journeyTitle = $row['journey_title'] ?? 'your journey';
+        $lessonTitle = $row['lesson_title'] ?? 'a lesson';
+
+        $stmt = $conn->prepare("
+            INSERT INTO notifications (user_id, journey_id, lesson_id, type, title, message, is_read, created_at, updated_at)
+            VALUES (?, ?, ?, 'points_earned', '+10 Points Earned!', ?, 0, NOW(), NOW())
+        ");
+        $stmt->execute([
+            $userId,
+            $journeyId,
+            $lessonId,
+            "You earned 10 points for completing {$lessonTitle} in {$journeyTitle}."
+        ]);
     }
 
     if ($action === 'undo') {
@@ -206,6 +229,29 @@ try {
             ");
             $stmt->execute([$userId]);
         }
+
+        $stmt = $conn->prepare("
+            SELECT j.title AS journey_title, l.title AS lesson_title
+            FROM lessons l
+            INNER JOIN journeys j ON j.id = l.journey_id
+            WHERE l.id = ?
+        ");
+        $stmt->execute([$lessonId]);
+        $row = $stmt->fetch();
+
+        $journeyTitle = $row['journey_title'] ?? 'your journey';
+        $lessonTitle = $row['lesson_title'] ?? 'a lesson';
+
+        $stmt = $conn->prepare("
+            INSERT INTO notifications (user_id, journey_id, lesson_id, type, title, message, is_read, created_at, updated_at)
+            VALUES (?, ?, ?, 'points_lost', '-10 Points Lost', ?, 0, NOW(), NOW())
+        ");
+        $stmt->execute([
+            $userId,
+            $journeyId,
+            $lessonId,
+            "You lost 10 points after undoing completion of {$lessonTitle} in {$journeyTitle}."
+        ]);
     }
 
     recalcJourneyProgress($conn, $userId, $journeyId);

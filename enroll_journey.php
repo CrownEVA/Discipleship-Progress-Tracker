@@ -44,5 +44,20 @@ if (!$existing) {
     $stmt->execute([$userId, $journeyId]);
 }
 
+$stmt = $conn->prepare("SELECT title FROM journeys WHERE id = ?");
+$stmt->execute([$journeyId]);
+$journey = $stmt->fetch();
+$journeyTitle = $journey ? $journey['title'] : 'your journey';
+
+$stmt = $conn->prepare("
+    INSERT INTO notifications (user_id, journey_id, type, title, message, is_read, created_at, updated_at)
+    VALUES (?, ?, 'journey_started', 'Journey Started', ?, 0, NOW(), NOW())
+");
+$stmt->execute([
+    $userId,
+    $journeyId,
+    "You've enrolled in {$journeyTitle}. Start your journey now!"
+]);
+
 header("Location: content.php?journey_id=" . $journeyId);
 exit;
