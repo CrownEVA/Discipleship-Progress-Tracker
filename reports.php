@@ -83,7 +83,11 @@ if (!$currentUserData) {
         WHERE id = ?
     ");
     $stmt->execute([$userId]);
-    $currentUserData = $stmt->fetch() ?: ['first_name' => 'User', 'last_name' => '', 'points' => 0];
+    $currentUserData = $stmt->fetch() ?: [
+        'first_name' => 'User',
+        'last_name' => '',
+        'points' => 0
+    ];
 }
 
 $points = (int) $currentUserData['points'];
@@ -91,7 +95,6 @@ $levelInfo = getLevelInfo($points);
 
 $topPercent = $totalUsers > 0 ? round(($currentUserRank / $totalUsers) * 100, 1) : 0;
 $aheadPercent = $totalUsers > 0 ? round((($totalUsers - $currentUserRank) / $totalUsers) * 100, 1) : 0;
-$activeAreas = 0;
 
 $stmt = $conn->prepare("
     SELECT COUNT(*) AS active_areas
@@ -104,6 +107,14 @@ $activeAreas = (int) $stmt->fetch()['active_areas'];
 
 $nextLevelPoints = $levelInfo['points_to_next'];
 ?>
+
+<style>
+#reportArea {
+    transform: scale(0.92);
+    transform-origin: top left;
+    width: 108.7%;
+}
+</style>
 
 <header>
     <nav class="sticky-top bg-white py-3">
@@ -121,119 +132,164 @@ $nextLevelPoints = $levelInfo['points_to_next'];
 
 <body class="bg-body-tertiary">
     <div class="container py-4">
-        <div class="border rounded-3 border-primary p-3 text-center bg-white">
-            <i class="fa-solid fa-star mb-2"></i>
-            <h2><?= (int) $points ?></h2>
-            <span>Total Points</span>
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-primary" onclick="exportReport()">
+                <i class="fa-solid fa-file-export"></i> Export to PDF
+            </button>
         </div>
 
-        <div class="d-flex gap-3 my-3">
-            <div class="border rounded-3 border-primary p-3 w-50 bg-white">
-                <i class="fa-solid fa-arrow-trend-up mb-2"></i>
-                <h3>Top <?= $topPercent ?>%</h3>
-                <span>Ahead of <?= $aheadPercent ?>% of users</span>
+        <div id="reportArea">
+            <div class="border rounded-3 border-primary p-3 text-center bg-white">
+                <i class="fa-solid fa-star mb-2"></i>
+                <h2><?= (int) $points ?></h2>
+                <span>Total Points</span>
             </div>
-            <div class="border rounded-3 border-primary p-3 w-50 bg-white">
-                <i class="fa-solid fa-shapes mb-2"></i>
-                <h3><?= (int) $activeAreas ?></h3>
-                <span>Active Areas</span>
-            </div>
-        </div>
 
-        <div class="border rounded-3 border-primary p-3 bg-white">
-            <div class="d-flex gap-3 align-items-center">
-                <div class="rounded-3 bg-primary d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
-                    <i class="fa-solid fa-trophy text-white"></i>
+            <div class="d-flex gap-3 my-3">
+                <div class="border rounded-3 border-primary p-3 w-50 bg-white">
+                    <i class="fa-solid fa-arrow-trend-up mb-2"></i>
+                    <h3>Top <?= $topPercent ?>%</h3>
+                    <span>Ahead of <?= $aheadPercent ?>% of users</span>
                 </div>
-                <div>
-                    <h3 class="mb-0"><?= htmlspecialchars($levelInfo['name']) ?></h3>
-                    <span class="text-muted small">Current Level</span>
+                <div class="border rounded-3 border-primary p-3 w-50 bg-white">
+                    <i class="fa-solid fa-shapes mb-2"></i>
+                    <h3><?= (int) $activeAreas ?></h3>
+                    <span>Active Areas</span>
                 </div>
             </div>
 
-            <div class="mt-3 mb-2">
-                <p class="m-0">
-                    Progress to <?= htmlspecialchars($levelInfo['next_name'] ?? $levelInfo['name']) ?>
-                    <span>
-                        <?= $levelInfo['next_name'] ? $nextLevelPoints . ' points to go' : 'Max level reached' ?>
-                    </span>
-                </p>
-
-                <div class="progress mt-2" style="height: 10px">
-                    <div class="progress-bar" style="width: <?= (int) $levelInfo['progress_to_next'] ?>%"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="border rounded-3 border-primary p-3 bg-white mt-3">
-            <div class="d-flex flex-column align-items-center">
-                <div class="d-flex gap-2 align-items-center">
-                    <i class="fa-solid fa-ranking-star"></i>
-                    <h4 class="mb-0">Top Performers</h4>
+            <div class="border rounded-3 border-primary p-3 bg-white">
+                <div class="d-flex gap-3 align-items-center">
+                    <div class="rounded-3 bg-primary d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
+                        <i class="fa-solid fa-trophy text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="mb-0"><?= htmlspecialchars($levelInfo['name']) ?></h3>
+                        <span class="text-muted small">Current Level</span>
+                    </div>
                 </div>
 
-                <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
-                    <?php
-                    $topThree = array_slice($leaderboard, 0, 3);
-                    foreach ($topThree as $index => $user):
-                        $rank = $index + 1;
-                    ?>
-                        <div class="bg-warning rounded-3 p-3 d-flex flex-column align-items-center" style="min-width: 180px;">
-                            <div class="rounded-circle mt-4 mx-5 bg-primary d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
-                                <i class="fa-solid fa-user text-white"></i>
-                            </div>
-                            <h6 class="mt-2 mb-1">
-                                <?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>
-                            </h6>
-                            <span class="text-muted small"><?= (int) $user['points'] ?> pts</span>
-                            <h1 class="mb-0 mt-3"><?= $rank ?></h1>
-                        </div>
-                    <?php endforeach; ?>
+                <div class="mt-3 mb-2">
+                    <p class="m-0">
+                        Progress to <?= htmlspecialchars($levelInfo['next_name'] ?? $levelInfo['name']) ?>
+                        <span>
+                            <?= $levelInfo['next_name'] ? $nextLevelPoints . ' points to go' : 'Max level reached' ?>
+                        </span>
+                    </p>
+
+                    <div class="progress mt-2" style="height: 10px">
+                        <div class="progress-bar" style="width: <?= (int) $levelInfo['progress_to_next'] ?>%"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mt-4 rounded-3 border border-primary p-3">
-                <div>
-                    <span class="text-muted small">Total points</span>
-                    <h5 class="mb-0 mt-1">You (<?= (int) $points ?> pts)</h5>
-                </div>
-                <h6 class="text-muted">
-                    <?= $currentUserRank > 0 ? 'Rank ' . $currentUserRank : 'No rank yet' ?>
-                </h6>
-            </div>
+            <div class="border rounded-3 border-primary p-3 bg-white mt-3">
+                <div class="d-flex flex-column align-items-center">
+                    <div class="d-flex gap-2 align-items-center">
+                        <i class="fa-solid fa-ranking-star"></i>
+                        <h4 class="mb-0">Top Performers</h4>
+                    </div>
 
-            <br>
-            <h6 class="text-muted">Player Ranks</h6>
-            <ul class="list-unstyled m-0">
-                <?php
-                $others = array_slice($leaderboard, 3, 7);
-                if (empty($others)):
-                ?>
-                    <li class="rounded-3 border border-primary p-3 text-center text-muted">No more users yet.</li>
-                <?php else: ?>
-                    <?php foreach ($others as $index => $user): ?>
-                        <?php $rank = $index + 4; ?>
-                        <li class="d-flex justify-content-between align-items-center rounded-3 border border-primary p-3 mb-3">
-                            <div class="d-flex gap-3 align-items-center">
-                                <h3 class="m-0"><?= $rank ?></h3>
-                                <div class="rounded-circle bg-primary d-flex justify-content-center align-items-center" style="width: 70px; height: 40px;">
+                    <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+                        <?php
+                        $topThree = array_slice($leaderboard, 0, 3);
+                        foreach ($topThree as $index => $user):
+                            $rank = $index + 1;
+                        ?>
+                            <div class="bg-warning rounded-3 p-3 d-flex flex-column align-items-center" style="min-width: 180px;">
+                                <div class="rounded-circle mt-4 mx-5 bg-primary d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
                                     <i class="fa-solid fa-user text-white"></i>
                                 </div>
-                                <div class="w-100">
-                                    <h6 class="mb-1"><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></h6>
-                                    <span class="text-muted small">
-                                        <?= htmlspecialchars(getLevelInfo((int) $user['points'])['name']) ?>
-                                    </span>
+                                <h6 class="mt-2 mb-1">
+                                    <?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>
+                                </h6>
+                                <span class="text-muted small"><?= (int) $user['points'] ?> pts</span>
+                                <h1 class="mb-0 mt-3"><?= $rank ?></h1>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4 rounded-3 border border-primary p-3">
+                    <div>
+                        <span class="text-muted small">Total points</span>
+                        <h5 class="mb-0 mt-1">You (<?= (int) $points ?> pts)</h5>
+                    </div>
+                    <h6 class="text-muted">
+                        <?= $currentUserRank > 0 ? 'Rank ' . $currentUserRank : 'No rank yet' ?>
+                    </h6>
+                </div>
+
+                <br>
+                <h6 class="text-muted">Player Ranks</h6>
+                <ul class="list-unstyled m-0">
+                    <?php
+                    $others = array_slice($leaderboard, 3, 7);
+                    if (empty($others)):
+                    ?>
+                        <li class="rounded-3 border border-primary p-3 text-center text-muted">No more users yet.</li>
+                    <?php else: ?>
+                        <?php foreach ($others as $index => $user): ?>
+                            <?php $rank = $index + 4; ?>
+                            <li class="d-flex justify-content-between align-items-center rounded-3 border border-primary p-3 mb-3">
+                                <div class="d-flex gap-3 align-items-center">
+                                    <h3 class="m-0"><?= $rank ?></h3>
+                                    <div class="rounded-circle bg-primary d-flex justify-content-center align-items-center" style="width: 70px; height: 40px;">
+                                        <i class="fa-solid fa-user text-white"></i>
+                                    </div>
+                                    <div class="w-100">
+                                        <h6 class="mb-1"><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></h6>
+                                        <span class="text-muted small">
+                                            <?= htmlspecialchars(getLevelInfo((int) $user['points'])['name']) ?>
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="d-flex gap-2 align-items-center">
-                                <i class="fa-solid fa-star"></i>
-                                <span><?= (int) $user['points'] ?> pts</span>
-                            </div>
-                        </li>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </ul>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <i class="fa-solid fa-star"></i>
+                                    <span><?= (int) $user['points'] ?> pts</span>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </ul>
+            </div>
         </div>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+    function exportReport() {
+        const element = document.getElementById('reportArea');
+
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+
+        const filename =
+            'my-points-report-' +
+            now.getFullYear() + '-' +
+            pad(now.getMonth() + 1) + '-' +
+            pad(now.getDate()) + '_' +
+            pad(now.getHours()) + '-' +
+            pad(now.getMinutes()) + '-' +
+            pad(now.getSeconds()) +
+            '.pdf';
+
+        const opt = {
+            margin: 0.3,
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true
+            },
+            jsPDF: {
+                unit: 'in',
+                format: 'a4',
+                orientation: 'portrait'
+            }
+        };
+
+        html2pdf().set(opt).from(element).save();
+    }
+    </script>
 </body>
