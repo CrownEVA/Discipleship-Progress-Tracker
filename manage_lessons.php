@@ -120,12 +120,22 @@ if (!empty($lessons)) {
 }
 ?>
 
+<style>
+.description-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+</style>
+
 <header>
     <nav class="sticky-top bg-white py-3">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
                 <a href="journeys.php">
-                    <i class="fa-solid fa-chevron-left"></i>
+                    <i class="fa-solid fa-chevron-left hover-btn"></i>
                 </a>
                 <h5 class="m-0">Manage Lessons</h5>
                 <div></div>
@@ -136,12 +146,14 @@ if (!empty($lessons)) {
 
 <body class="bg-body-tertiary">
     <div class="container py-4">
-        <div class="border rounded-3 border-primary bg-white p-3 mb-4">
+        <div class="border rounded-3 border-primary bg-white mb-4 p-3">
             <div class="d-flex gap-3 align-items-center">
-                <img src="<?= htmlspecialchars($journey['image']) ?>" alt="Journey" class="rounded-3" style="width: 80px; height: 80px; object-fit: cover;">
+                <img src="<?= htmlspecialchars($journey['image']) ?>" alt="Journey" class="rounded-3" style="width: 100px; height: 100px; object-fit: cover;">
                 <div>
                     <h5 class="mb-1"><?= htmlspecialchars($journey['title']) ?></h5>
-                    <p class="mb-0 text-muted"><?= htmlspecialchars($journey['description']) ?></p>
+                    <p class="mb-0 text-muted text-break description-clamp">
+                        <?= nl2br(htmlspecialchars($journey['description'])) ?>
+                    </p>
                 </div>
             </div>
         </div>
@@ -151,25 +163,23 @@ if (!empty($lessons)) {
             <form method="POST" action="">
                 <input type="hidden" name="action" value="add_lesson">
 
-                <div class="row g-3">
-                    <div class="col-md-2">
-                        <label class="form-label">Lesson No</label>
-                        <input type="number" name="lesson" class="form-control" min="1" value="<?= (int) $nextLessonNumber ?>" required>
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Title</label>
-                        <input type="text" name="title" class="form-control" required>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Content</label>
-                        <textarea name="content" class="form-control" rows="4" required></textarea>
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label">Lesson No</label>
+                    <input type="number" name="lesson" class="form-control" min="1" value="<?= (int) $nextLessonNumber ?>" required>
                 </div>
 
-                <div class="mt-3">
-                    <button type="submit" class="btn btn-primary">Add Lesson</button>
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <input type="text" name="title" class="form-control" required placeholder="Enter lesson title">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Content</label>
+                    <textarea name="content" class="form-control" rows="4" required placeholder="Enter lesson content"></textarea>
+                </div>
+
+                <div class="mt-3 text-end">
+                    <button type="submit" class="btn btn-primary m-0">Add Lesson</button>
                 </div>
             </form>
         </div>
@@ -184,47 +194,47 @@ if (!empty($lessons)) {
                     <div class="border rounded-3 p-3 mb-3">
                         <div class="d-flex justify-content-between align-items-start gap-3">
                             <div class="w-100">
-                                <h6 class="mb-1">Lesson <?= (int) $lesson['lesson'] ?></h6>
-                                <strong><?= htmlspecialchars($lesson['title']) ?></strong>
-                                <p class="mb-0 text-muted small"><?= htmlspecialchars($lesson['content']) ?></p>
+                                <span class="text-muted small">Lesson <?= (int) $lesson['lesson'] ?></span>
+                                <h5 class="my-2"><?= htmlspecialchars($lesson['title']) ?></h5>
+                                <p class="mb-0 small text-break" style="white-space: pre-line;"><?= htmlspecialchars($lesson['content']) ?></p>
                             </div>
 
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-warning btn-sm" onclick="toggleEditRow(<?= (int) $lesson['id'] ?>)">
-                                    Edit
+                                <button type="button" class="btn btn-warning btn-sm px-1 py-2" onclick="toggleEditRow(<?= (int) $lesson['id'] ?>)">
+                                    <i class="fa-solid fa-pen small"></i>
                                 </button>
 
                                 <form method="POST" action="" class="m-0" onsubmit="return confirm('Delete this lesson?');">
                                     <input type="hidden" name="action" value="delete_lesson">
                                     <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id'] ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                    <button type="submit" class="btn btn-danger btn-sm px-1 py-2">
+                                        <i class="fa-solid fa-trash small"></i>
+                                    </button>
                                 </form>
                             </div>
                         </div>
 
-                        <div id="editRow<?= (int) $lesson['id'] ?>" class="mt-3 d-none">
-                            <form method="POST" action="">
+                        <div id="editRow<?= (int) $lesson['id'] ?>" class="mt-3 border-top d-none">
+                            <form method="POST" action="" class="mt-3">
                                 <input type="hidden" name="action" value="update_lesson">
                                 <input type="hidden" name="lesson_id" value="<?= (int) $lesson['id'] ?>">
 
-                                <div class="row g-3">
-                                    <div class="col-md-2">
-                                        <label class="form-label">Lesson No</label>
-                                        <input type="number" name="lesson" class="form-control" min="1" value="<?= (int) $lesson['lesson'] ?>" required>
-                                    </div>
-
-                                    <div class="col-md-4">
-                                        <label class="form-label">Title</label>
-                                        <input type="text" name="title" class="form-control" value="<?= htmlspecialchars($lesson['title'], ENT_QUOTES) ?>" required>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label">Content</label>
-                                        <textarea name="content" class="form-control" rows="4" required><?= htmlspecialchars($lesson['content']) ?></textarea>
-                                    </div>
+                                <div class="mb-3">
+                                    <label class="form-label small">Lesson No</label>
+                                    <input type="number" name="lesson" class="form-control" min="1" value="<?= (int) $lesson['lesson'] ?>" required>
                                 </div>
 
-                                <div class="mt-3 d-flex gap-2">
+                                <div class="mb-3">
+                                    <label class="form-label small">Title</label>
+                                    <input type="text" name="title" class="form-control" value="<?= htmlspecialchars($lesson['title'], ENT_QUOTES) ?>" required placeholder="Enter lesson title">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label small">Content</label>
+                                    <textarea name="content" class="form-control" rows="4" required placeholder="Enter lesson content"><?= htmlspecialchars($lesson['content']) ?></textarea>
+                                </div>
+
+                                <div class="mt-3 d-flex gap-2 justify-content-end">
                                     <button type="submit" class="btn btn-primary">Save Changes</button>
                                     <button type="button" class="btn btn-secondary" onclick="toggleEditRow(<?= (int) $lesson['id'] ?>)">Cancel</button>
                                 </div>

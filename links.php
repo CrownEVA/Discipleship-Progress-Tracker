@@ -2,3 +2,17 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="style.css?v=<?php echo time(); ?>">
+
+<style>
+    .container {
+        max-width: 768px;
+    }
+    .hover-btn:hover {
+        transform: scale(1.2);
+        transition: transform 0.2s;
+    }
+    .hover-card:hover {
+        transform: scale(1.03);
+        transition: transform 0.3s;
+    }
+</style>

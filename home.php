@@ -152,21 +152,21 @@ $accounts = $stmt->fetchAll();
 ?>
 
 <header>
-    <nav class="navbar bg-primary py-3">
+    <nav class="navbar py-3" style="background-image: url('assets/bg.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
         <div class="container">
-            <a class="navbar-brand" href="account.php"><i class="fa-solid fa-user text-white h4"></i></a>
+            <a class="navbar-brand" href="account.php"><i class="fa-solid fa-user text-white h4 hover-btn"></i></a>
             <div class="align-items-center d-flex flex-column">
                 <h5 class="m-0 text-white">Welcome, <?= htmlspecialchars($_SESSION["user_name"]) ?>!</h5>
                 <span class="text-white">Are you ready to win souls day?</span>
             </div>
-            <a href="notifications.php"><i class="fa-solid fa-bell text-white h4"></i></a>
+            <a href="notifications.php"><i class="fa-solid fa-bell text-white h4 hover-btn"></i></a>
         </div>
     </nav>
 </header>
 
 <body class="bg-body-tertiary">
     <a href="reports.php" class="text-decoration-none">
-        <div class="container mt-4 border rounded-3 border-primary p-4 d-flex justify-content-around bg-white">
+        <div class="container mt-4 border rounded-3 border-primary p-4 d-flex justify-content-around bg-white hover-card">
             <div class="d-flex flex-column align-items-center border-end border-primary w-100">
                 <i class="fa-solid fa-star mb-1"></i>
                 <h4 class="m-0 py-1"><?= (int) $points ?></h4>
@@ -186,7 +186,7 @@ $accounts = $stmt->fetchAll();
     </a>
 
     <?php if ($enrolledJourneys): ?>
-    <div class="container mt-4 border rounded-3 border-primary p-4 bg-white">
+    <div class="container mt-4 border rounded-3 border-primary p-4 bg-white hover-card">
         <div class="container-header d-flex justify-content-between align-items-center border-bottom border-muted pb-3">
             <div class="d-flex align-items-center gap-2">
                 <i class="fa-solid fa-flag text-primary h5 p-0 m-0"></i>
@@ -209,14 +209,14 @@ $accounts = $stmt->fetchAll();
                 ?>
                 <li class="list-group-item py-3 px-0">
                     <div class="d-flex gap-3 align-items-center">
-                        <img src="<?= htmlspecialchars($journey['image']) ?>" alt="Journey image" class="rounded-3" style="width: 70px; height: 70px; object-fit: cover;">
+                        <img src="<?= htmlspecialchars($journey['image']) ?>" alt="Journey image" class="rounded-3" style="width: 80px; height: 80px; object-fit: cover;">
                         <div class="w-100">
                             <h6 class="mb-1"><?= htmlspecialchars($journey['title']) ?></h6>
                             <span class="text-muted small">
                                 <?= $progressPercent > 0 ? $progressPercent . '% complete' : 'Not started' ?>
                             </span>
 
-                            <div class="progress my-3" style="height: 5px">
+                            <div class="progress my-2" style="height: 5px">
                                 <div class="progress-bar" style="width: <?= $progressPercent ?>%"></div>
                             </div>
 
@@ -224,7 +224,7 @@ $accounts = $stmt->fetchAll();
                                 <span class="text-muted small">
                                     Step <?= $currentStep ?> of <?= $lessonCount > 0 ? $lessonCount : 1 ?>
                                 </span>
-                                <a href="content.php?journey_id=<?= (int) $journey['id'] ?>" class="btn btn-primary">
+                                <a href="content.php?journey_id=<?= (int) $journey['id'] ?>" class="btn btn-primary btn-sm">
                                     <?= $progressPercent > 0 ? 'Continue' : 'Start' ?>
                                 </a>
                             </div>
@@ -238,7 +238,7 @@ $accounts = $stmt->fetchAll();
 
     <?php if (empty($enrolledJourneys)): ?>
     <a href="journeys.php" class="text-decoration-none">
-        <div class="container mt-4 border rounded-3 border-primary p-4 bg-white">
+        <div class="container mt-4 border rounded-3 border-primary p-4 bg-white hover-card">
             <div class="d-flex justify-content-between align-items-center">
                 <i class="fa-solid fa-compass text-primary h5 p-0 m-0"></i>
                 <div class="text-center">
@@ -257,21 +257,22 @@ $accounts = $stmt->fetchAll();
             <i class="fa-solid fa-users text-primary h5 p-0 m-0"></i>
             <h5 class="m-0">Accounts</h5>
         </div>
+  
         <table class="table">
             <thead>
-                <tr>
+                <tr class="text-center">
                     <th scope="col">#</th>
                     <th scope="col">Name</th>
                     <th scope="col">Email</th>
                     <th scope="col">Points</th>
                     <th scope="col">Level</th>
-                    <th scope="col">Active Areas</th>
+                    <th scope="col">Active</th>
                     <th>Action</th>
                 </tr>
             </thead>
             <tbody>
             <?php foreach ($accounts as $index => $account): ?>
-                <tr>
+                <tr class="text-center">
                     <td><?= $index + 1 ?></td>
                     <td><?= htmlspecialchars($account['first_name'] . ' ' . $account['last_name']) ?></td>
                     <td><?= htmlspecialchars($account['email']) ?></td>
@@ -295,7 +296,7 @@ $accounts = $stmt->fetchAll();
                             data-role="<?= htmlspecialchars($account['role'], ENT_QUOTES) ?>"
                             data-points="<?= (int) $account['points'] ?>"
                         >
-                            Update
+                            <i class="fa-solid fa-pen p-1"></i>
                         </button>
 
                         <button
@@ -305,7 +306,7 @@ $accounts = $stmt->fetchAll();
                             data-user-id="<?= (int) $account['id'] ?>"
                             data-user-name="<?= htmlspecialchars($account['first_name'] . ' ' . $account['last_name'], ENT_QUOTES) ?>"
                         >
-                            Delete
+                            <i class="fa-solid fa-trash p-1"></i>
                         </button>
                     </td>
                 </tr>

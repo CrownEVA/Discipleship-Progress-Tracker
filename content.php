@@ -2,6 +2,7 @@
 session_start();
 $pointsFlash = $_SESSION['points_flash'] ?? null;
 unset($_SESSION['points_flash']);
+
 include 'links.php';
 include 'database.php';
 
@@ -86,7 +87,6 @@ if (!$currentLesson) {
 }
 
 $currentLessonId = (int) $currentLesson['id'];
-$currentLessonNumber = (int) $currentLesson['lesson'];
 
 $stmt = $conn->prepare("
     SELECT is_completed
@@ -181,7 +181,9 @@ $progressPercent = $totalLessons > 0 ? (int) floor(($completedLessons / $totalLe
 
         <div>
             <h5>Content</h5>
-            <p class="border rounded-3 p-3 bg-white"><?= nl2br(htmlspecialchars($currentLesson['content'])) ?></p>
+            <p class="border rounded-3 p-3 bg-white">
+                <?= nl2br(htmlspecialchars($currentLesson['content'])) ?>
+            </p>
         </div>
 
         <?php if (!$isCompleted): ?>
@@ -206,6 +208,7 @@ $progressPercent = $totalLessons > 0 ? (int) floor(($completedLessons / $totalLe
             </div>
         <?php endif; ?>
     </div>
+
     <?php if ($pointsFlash): ?>
     <div class="modal fade" id="pointsEarnedModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">

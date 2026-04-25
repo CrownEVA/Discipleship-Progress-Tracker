@@ -87,7 +87,6 @@ function saveJourneyImage(array $file, string $uploadDir): ?string
     return null;
 }
 
-/* Admin journey actions */
 if ($_SERVER["REQUEST_METHOD"] === "POST" && $isAdmin && isset($_POST["action"])) {
     $action = $_POST["action"];
 
@@ -177,7 +176,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && $isAdmin && isset($_POST["action"])
     }
 }
 
-/* Discover journeys */
 if ($isAdmin) {
     $stmt = $conn->prepare("
         SELECT
@@ -221,7 +219,6 @@ if ($isAdmin) {
 }
 $discoverJourneys = $stmt->fetchAll();
 
-/* My journeys */
 $stmt = $conn->prepare("
     SELECT
         j.id,
@@ -276,6 +273,21 @@ $myJourneys = $stmt->fetchAll();
 .journey-section.active {
     display: block;
 }
+
+.description-clamp {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.description-clamp-my {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 </style>
 
 <header>
@@ -283,7 +295,7 @@ $myJourneys = $stmt->fetchAll();
         <div class="container">
             <div class="align-items-center d-flex justify-content-between mb-3">
                 <a href="home.php">
-                    <i class="fa-solid fa-chevron-left text-black"></i>
+                    <i class="fa-solid fa-chevron-left text-black hover-btn"></i>
                 </a>
                 <h5 class="mb-0 text-primary">Journeys</h5>
                 <div></div>
@@ -339,35 +351,35 @@ $myJourneys = $stmt->fetchAll();
                 data-lessons="<?= (int) $journey['lesson_count'] ?>"
                 data-users="<?= (int) $journey['enrolled_users'] ?>"
             >
-                <div class="row g-0">
-                    <div class="col-md-2">
-                        <img src="<?= htmlspecialchars($journey['image']) ?>" class="img-fluid rounded-start w-100" alt="Journey image">
+                <div class="d-flex gap-2 w-100 align-items-start hover-card">
+                    <div>
+                        <img src="<?= htmlspecialchars($journey['image']) ?>" class="rounded-start" alt="Journey image" style="height: 200px; width: 200px; object-fit: cover;">
                     </div>
-                    <div class="col-md-10">
-                        <div class="card-body d-flex justify-content-between align-items-center gap-3">
-                            <div>
-                                <h5 class="card-title mb-2"><?= htmlspecialchars($journey['title']) ?></h5>
-                                <p class="card-text"><?= htmlspecialchars($journey['description']) ?></p>
 
-                                <div class="d-flex gap-3 flex-wrap">
-                                    <div class="py-2 px-3 rounded-5 bg-primary text-white">
-                                        <i class="fa-solid fa-list-ol"></i>
-                                        <span><?= (int) $journey['lesson_count'] ?> lessons</span>
-                                    </div>
-                                    <div class="py-2 px-3 rounded-5 bg-primary text-white">
-                                        <i class="fa-solid fa-user-group"></i>
-                                        <span><?= (int) $journey['enrolled_users'] ?> users</span>
-                                    </div>
+                    <div class="card-body d-flex justify-content-between align-items-center w-100">
+                        <div class="flex-grow-1 pe-3">
+                            <h5 class="card-title mb-2"><?= htmlspecialchars($journey['title']) ?></h5>
+                            <p class="card-text small mb-2 description-clamp text-break">
+                                <?= nl2br(htmlspecialchars($journey['description'])) ?>
+                            </p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <div class="py-1 px-2 rounded-4 bg-primary-subtle text-primary small">
+                                    <i class="fa-solid fa-list-ol"></i>
+                                    <span><?= (int) $journey['lesson_count'] ?> lessons</span>
+                                </div>
+                                <div class="py-1 px-2 rounded-4 bg-primary-subtle text-primary small">
+                                    <i class="fa-solid fa-user-group"></i>
+                                    <span><?= (int) $journey['enrolled_users'] ?> users</span>
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
-                                <?php if ($isAdmin): ?>
-                                    <i class="fa-solid fa-gear"></i>
-                                <?php else: ?>
-                                    <i class="fa-solid fa-plus"></i>
-                                <?php endif; ?>
-                            </div>
+                        <div class="hover-btn rounded-circle bg-primary-subtle d-flex justify-content-center align-items-center flex-shrink-0" style="width: 30px; height: 30px;">
+                            <?php if ($isAdmin): ?>
+                                <i class="fa-solid fa-gear small text-primary"></i>
+                            <?php else: ?>
+                                <i class="fa-solid fa-plus small text-primary"></i>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -383,16 +395,18 @@ $myJourneys = $stmt->fetchAll();
                     </div>
 
                     <div class="modal-body">
-                        <img id="discoverModalImage" src="" class="img-fluid w-100 rounded-start" alt="Journey image">
+                        <div class="d-flex justify-content-center">
+                            <img id="discoverModalImage" src="" class="img-fluid rounded" alt="Journey image" style="height: 300px; width: 300px; object-fit: cover;">
+                        </div>
                         <div class="mt-3">
-                            <h4 class="card-title" id="discoverModalTitle"></h4>
+                            <h4 class="card-title m-0" id="discoverModalTitle"></h4>
 
-                            <div class="d-flex gap-3 mt-2 mb-3">
-                                <div class="py-2 px-3 rounded-5 bg-primary text-white">
+                            <div class="d-flex gap-2 my-3">
+                                <div class="py-1 px-2 rounded-4 border border-primary text-primary small">
                                     <i class="fa-solid fa-list-ol"></i>
                                     <span id="discoverModalLessons"></span>
                                 </div>
-                                <div class="py-2 px-3 rounded-5 bg-primary text-white">
+                                <div class="py-1 px-2 rounded-4 border border-primary text-primary small">
                                     <i class="fa-solid fa-user-group"></i>
                                     <span id="discoverModalUsers"></span>
                                 </div>
@@ -400,7 +414,7 @@ $myJourneys = $stmt->fetchAll();
 
                             <div>
                                 <h5>Description</h5>
-                                <p id="discoverModalDescription"></p>
+                                <p id="discoverModalDescription" class="text-break" style="white-space: pre-line;"></p>
                             </div>
 
                             <input type="hidden" id="currentJourneyId">
@@ -423,7 +437,7 @@ $myJourneys = $stmt->fetchAll();
                             <button type="button" class="btn btn-danger flex-fill" id="openDeleteJourneyBtn">
                                 Delete
                             </button>
-                            <a href="#" class="btn btn-outline-secondary flex-fill" id="manageLessonsBtn">
+                            <a href="#" class="btn btn-secondary flex-fill" id="manageLessonsBtn">
                                 Manage Lessons
                             </a>
                         <?php endif; ?>
@@ -446,12 +460,12 @@ $myJourneys = $stmt->fetchAll();
 
                             <div class="mb-3">
                                 <label>Title</label>
-                                <input type="text" name="title" class="form-control" required>
+                                <input type="text" name="title" class="form-control" required placeholder="What's the journey title?">
                             </div>
 
                             <div class="mb-3">
                                 <label>Description</label>
-                                <textarea name="description" class="form-control" rows="4" required></textarea>
+                                <textarea name="description" class="form-control" rows="4" required placeholder="Describe the journey"></textarea>
                             </div>
 
                             <div class="mb-3">
@@ -481,12 +495,12 @@ $myJourneys = $stmt->fetchAll();
 
                             <div class="mb-3">
                                 <label>Title</label>
-                                <input type="text" name="title" id="updateJourneyTitle" class="form-control" required>
+                                <input type="text" name="title" id="updateJourneyTitle" class="form-control" required placeholder="What's the journey title?">
                             </div>
 
                             <div class="mb-3">
                                 <label>Description</label>
-                                <textarea name="description" id="updateJourneyDescription" class="form-control" rows="4" required></textarea>
+                                <textarea name="description" id="updateJourneyDescription" class="form-control" rows="4" required placeholder="Describe the journey"></textarea>
                             </div>
 
                             <div class="mb-3">
@@ -495,7 +509,7 @@ $myJourneys = $stmt->fetchAll();
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="submit" class="btn btn-warning">Update</button>
+                            <button type="submit" class="btn btn-warning">Update Journey</button>
                         </div>
                     </form>
                 </div>
@@ -507,7 +521,7 @@ $myJourneys = $stmt->fetchAll();
                 <div class="modal-content">
                     <form method="POST" action="">
                         <div class="modal-header">
-                            <h5 class="modal-title text-danger">Delete Journey</h5>
+                            <h5 class="modal-title">Delete Journey</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
@@ -525,6 +539,9 @@ $myJourneys = $stmt->fetchAll();
         </div>
         <?php endif; ?>
     </div>
+
+
+
 
     <div class="container mt-4 journey-section" id="myJourneysSection">
         <?php if (empty($myJourneys)): ?>
@@ -545,38 +562,37 @@ $myJourneys = $stmt->fetchAll();
                 data-lessons="<?= (int) $journey['lesson_count'] ?>"
                 data-progress="<?= $progress ?>"
             >
-                <div class="row g-0">
-                    <div class="col-md-2">
-                        <img src="<?= htmlspecialchars($journey['image']) ?>" class="img-fluid rounded-start w-100" alt="Journey image">
+                <div class="d-flex gap-2 w-100 align-items-start hover-card">
+                    <div>
+                        <img src="<?= htmlspecialchars($journey['image']) ?>" class="rounded-start" alt="Journey image" style="height: 200px; width: 200px; object-fit: cover;">
                     </div>
-                    <div class="col-md-10">
-                        <div class="card-body d-flex justify-content-between align-items-center gap-3">
-                            <div>
-                                <h5 class="card-title mb-2"><?= htmlspecialchars($journey['title']) ?></h5>
-                                <p class="card-text"><?= htmlspecialchars($journey['description']) ?></p>
-
-                                <div class="d-flex gap-3 flex-wrap">
-                                    <div class="py-2 px-3 rounded-5 bg-primary text-white">
-                                        <i class="fa-solid fa-list-ol"></i>
-                                        <span><?= (int) $journey['lesson_count'] ?> lessons</span>
-                                    </div>
-                                    <div class="py-2 px-3 rounded-5 bg-primary text-white">
-                                        <i class="fa-solid fa-user-group"></i>
-                                        <span><?= $progress ?>%</span>
-                                    </div>
+                    <div class="card-body d-flex justify-content-between align-items-center w-100">
+                        <div class="flex-grow-1 pe-3">
+                            <h5 class="card-title mb-2"><?= htmlspecialchars($journey['title']) ?></h5>
+                            <p class="card-text small text-muted mb-2 description-clamp-my text-break">
+                                <?= nl2br(htmlspecialchars($journey['description'])) ?>
+                            </p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <div class="py-1 px-2 rounded-4 bg-primary-subtle text-primary small">
+                                    <i class="fa-solid fa-list-ol"></i>
+                                    <span><?= (int) $journey['lesson_count'] ?> lessons</span>
                                 </div>
-
-                                <div class="mt-3">
-                                    <span class="text-muted small"><?= $progress ?>% complete</span>
-                                    <div class="progress mt-2" style="height: 5px">
-                                        <div class="progress-bar" style="width: <?= $progress ?>%"></div>
-                                    </div>
+                                <div class="py-1 px-2 rounded-4 bg-primary-subtle text-primary small">
+                                    <i class="fa-solid fa-user"></i>
+                                    <span><?= $progress ?>%</span>
                                 </div>
                             </div>
 
-                            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center" style="width: 40px; height: 40px;">
-                                <i class="fa-solid fa-chevron-right"></i>
+                            <div class="mt-3">
+                                <span class="text-primary small"><?= $progress ?>% complete</span>
+                                <div class="progress mt-2" style="height: 5px">
+                                    <div class="progress-bar" style="width: <?= $progress ?>%"></div>
+                                </div>
                             </div>
+                        </div>
+
+                        <div class="hover-btn rounded-circle bg-primary-subtle d-flex justify-content-center align-items-center flex-shrink-0" style="width: 30px; height: 30px;">
+                            <i class="fa-solid fa-chevron-right small text-primary"></i>
                         </div>
                     </div>
                 </div>
@@ -592,34 +608,37 @@ $myJourneys = $stmt->fetchAll();
                     </div>
 
                     <div class="modal-body">
-                        <img id="myModalImage" src="" class="img-fluid w-100 rounded-start" alt="Journey image">
+                        <div class="d-flex justify-content-center">
+                            <img id="myModalImage" src="" class="img-fluid rounded" alt="Journey image" style="height: 300px; width: 300px; object-fit: cover;">
+                        </div>
                         <div class="mt-3">
-                            <h4 class="card-title" id="myModalTitle"></h4>
-
-                            <div class="d-flex gap-3 mt-2 mb-3">
-                                <div class="py-2 px-3 rounded-5 bg-primary text-white">
+                            <h4 class="card-title m-0" id="myModalTitle"></h4>
+                            
+                            <div class="d-flex gap-2 my-3">
+                                <div class="py-1 px-2 rounded-4 border border-primary text-primary small">
                                     <i class="fa-solid fa-list-ol"></i>
                                     <span id="myModalLessons"></span>
                                 </div>
-                                <div class="py-2 px-3 rounded-5 bg-primary text-white">
-                                    <i class="fa-solid fa-user-group"></i>
+                                <div class="py-1 px-2 rounded-4 border border-primary text-primary small">
+                                    <i class="fa-solid fa-user"></i>
                                     <span id="myModalProgress"></span>
                                 </div>
                             </div>
 
-                            <div class="border rounded-3 border-primary p-3 my-3">
+                            <div class="border rounded-3 border-primary p-3 my-3 bg-primary-subtle">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5 class="m-0">Your Progress</h5>
-                                    <h5 class="m-0" id="myModalProgressText"></h5>
+                                    <h5 class="m-0 text-primary" id="myModalProgressText"></h5>
                                 </div>
-                                <div class="progress mt-2" style="height: 10px">
+                                <div class="progress mt-3 mb-2" style="height: 10px">
                                     <div class="progress-bar" id="myModalProgressBar" style="width: 0%"></div>
                                 </div>
+                                <span class="text-muted small">Step 8 of 10</span>
                             </div>
 
                             <div>
                                 <h5>Description</h5>
-                                <p id="myModalDescription"></p>
+                                <p id="myModalDescription" class="text-break" style="white-space: pre-line;"></p>
                             </div>
                         </div>
                     </div>
@@ -655,6 +674,8 @@ $myJourneys = $stmt->fetchAll();
             </div>
         </div>
     </div>
+
+    <br><br>
 
 <script>
 document.querySelectorAll('.journey-tab').forEach(tab => {

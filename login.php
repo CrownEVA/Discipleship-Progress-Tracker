@@ -48,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 ?>
 
-<div class="d-flex justify-content-center align-items-center vh-100 bg-primary">
+<div class="d-flex justify-content-center align-items-center vh-100" style="background-image: url('assets/bg.jpg'); background-size: cover; background-position: center; background-repeat: no-repeat;">
     <div class="border rounded-3 border-primary p-4 w-25 bg-white">
         <h3 class="m-0">Sign In</h3>
         <br>
