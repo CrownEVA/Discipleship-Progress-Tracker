@@ -151,7 +151,7 @@ if (!empty($lessons)) {
                 <img src="<?= htmlspecialchars($journey['image']) ?>" alt="Journey" class="rounded-3" style="width: 100px; height: 100px; object-fit: cover;">
                 <div>
                     <h5 class="mb-1"><?= htmlspecialchars($journey['title']) ?></h5>
-                    <p class="mb-0 text-muted text-break description-clamp">
+                    <p class="mb-0 text-muted small text-break description-clamp">
                         <?= nl2br(htmlspecialchars($journey['description'])) ?>
                     </p>
                 </div>

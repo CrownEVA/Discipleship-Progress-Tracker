@@ -662,7 +662,7 @@ $myJourneys = $stmt->fetchAll();
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    Are you sure you want to unenroll from this journey? This will remove it from My Journeys and show it again in Discover.
+                    Are you sure you want to unenroll from this journey? All your progress in this journey will be lost and cannot be undone.
                 </div>
                 <div class="modal-footer">
                     <form method="POST" action="unenroll_journey.php" class="m-0">
