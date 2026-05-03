@@ -8,13 +8,10 @@ if (!isset($_SESSION["user_id"])) {
     exit;
 }
 
-function isAdmin(): bool {
-    return isset($_SESSION["user_role"]) && $_SESSION["user_role"] === "admin";
-}
-
 date_default_timezone_set('Asia/Manila');
 
 $userId = (int) $_SESSION["user_id"];
+$isAdmin = isset($_SESSION["user_role"]) && $_SESSION["user_role"] === "admin";
 
 function getLevelInfo(int $points): array
 {
@@ -132,23 +129,6 @@ $stmt = $conn->prepare("
 ");
 $stmt->execute([$userId]);
 $enrolledJourneys = $stmt->fetchAll();
-
-$stmt = $conn->prepare("
-    SELECT
-        u.id,
-        u.first_name,
-        u.last_name,
-        u.email,
-        u.role,
-        COALESCE(u.points, 0) AS points,
-        COUNT(DISTINCT CASE WHEN uj.status <> 'unenrolled' THEN uj.journey_id END) AS active_areas
-    FROM users u
-    LEFT JOIN user_journeys uj ON uj.user_id = u.id
-    GROUP BY u.id, u.first_name, u.last_name, u.email, u.role, u.points
-    ORDER BY u.role DESC, u.points DESC, u.id ASC
-");
-$stmt->execute();
-$accounts = $stmt->fetchAll();
 ?>
 
 <header>
@@ -166,7 +146,7 @@ $accounts = $stmt->fetchAll();
 
 <body class="bg-body-tertiary">
     <a href="reports.php" class="text-decoration-none">
-        <div class="container mt-4 border rounded-3 border-primary p-4 d-flex justify-content-around bg-white hover-card">
+        <div class="container mt-4 border rounded-3 border-primary p-4 d-flex justify-content-around bg-white">
             <div class="d-flex flex-column align-items-center border-end border-primary w-100">
                 <i class="fa-solid fa-star mb-1"></i>
                 <h4 class="m-0 py-1"><?= (int) $points ?></h4>
@@ -186,7 +166,7 @@ $accounts = $stmt->fetchAll();
     </a>
 
     <?php if ($enrolledJourneys): ?>
-    <div class="container mt-4 border rounded-3 border-primary p-4 bg-white hover-card">
+    <div class="container mt-4 border rounded-3 border-primary p-4 bg-white">
         <div class="container-header d-flex justify-content-between align-items-center border-bottom border-muted pb-3">
             <div class="d-flex align-items-center gap-2">
                 <i class="fa-solid fa-flag text-primary h5 p-0 m-0"></i>
@@ -238,7 +218,7 @@ $accounts = $stmt->fetchAll();
 
     <?php if (empty($enrolledJourneys)): ?>
     <a href="journeys.php" class="text-decoration-none">
-        <div class="container mt-4 border rounded-3 border-primary p-4 bg-white hover-card">
+        <div class="container mt-4 border rounded-3 border-primary p-4 bg-white">
             <div class="d-flex justify-content-between align-items-center">
                 <i class="fa-solid fa-compass text-primary h5 p-0 m-0"></i>
                 <div class="text-center">
@@ -251,158 +231,10 @@ $accounts = $stmt->fetchAll();
     </a>
     <?php endif; ?>
 
-    <?php if (isset($_SESSION["user_role"]) && $_SESSION["user_role"] === "admin"): ?>
-    <div class="container my-4 border rounded-3 border-primary p-4 bg-white">
-        <div class="d-flex align-items-center gap-2 border-bottom border-muted pb-4">
-            <i class="fa-solid fa-users text-primary h5 p-0 m-0"></i>
-            <h5 class="m-0">Accounts</h5>
+    <?php if ($isAdmin): ?>
+        <div class="container mt-4 mb-5">
+            <a href="admin.php" class="btn btn-primary w-100">Open Admin Panel</a>
         </div>
-  
-        <table class="table">
-            <thead>
-                <tr class="text-center">
-                    <th scope="col">#</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Points</th>
-                    <th scope="col">Level</th>
-                    <th scope="col">Active</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($accounts as $index => $account): ?>
-                <tr class="text-center">
-                    <td><?= $index + 1 ?></td>
-                    <td><?= htmlspecialchars($account['first_name'] . ' ' . $account['last_name']) ?></td>
-                    <td><?= htmlspecialchars($account['email']) ?></td>
-                    <td><?= (int) $account['points'] ?></td>
-                    <td>
-                        <?php
-                            $level = getLevelInfo((int) $account['points']);
-                            echo htmlspecialchars($level['name']);
-                        ?>
-                    </td>
-                    <td><?= (int) $account['active_areas'] ?></td>
-                    <td>
-                        <button
-                            class="btn btn-outline-warning btn-sm"
-                            data-bs-toggle="modal"
-                            data-bs-target="#updateUserModal"
-                            data-user-id="<?= (int) $account['id'] ?>"
-                            data-first-name="<?= htmlspecialchars($account['first_name'], ENT_QUOTES) ?>"
-                            data-last-name="<?= htmlspecialchars($account['last_name'], ENT_QUOTES) ?>"
-                            data-email="<?= htmlspecialchars($account['email'], ENT_QUOTES) ?>"
-                            data-role="<?= htmlspecialchars($account['role'], ENT_QUOTES) ?>"
-                            data-points="<?= (int) $account['points'] ?>"
-                        >
-                            <i class="fa-solid fa-pen p-1"></i>
-                        </button>
-
-                        <button
-                            class="btn btn-outline-danger btn-sm"
-                            data-bs-toggle="modal"
-                            data-bs-target="#deleteUserModal"
-                            data-user-id="<?= (int) $account['id'] ?>"
-                            data-user-name="<?= htmlspecialchars($account['first_name'] . ' ' . $account['last_name'], ENT_QUOTES) ?>"
-                        >
-                            <i class="fa-solid fa-trash p-1"></i>
-                        </button>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-        <div class="modal fade" id="updateUserModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <form method="POST" action="admin_update_user.php">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Update Account</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-
-                        <div class="modal-body">
-                            <input type="hidden" name="user_id" id="updateUserId">
-
-                            <div class="mb-3">
-                                <label>First Name</label>
-                                <input type="text" name="first_name" id="updateFirstName" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label>Last Name</label>
-                                <input type="text" name="last_name" id="updateLastName" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label>Email</label>
-                                <input type="email" name="email" id="updateEmail" class="form-control" required>
-                            </div>
-
-                            <div class="mb-3">
-                                <label>Role</label>
-                                <select name="role" id="updateRole" class="form-control">
-                                    <option value="user">User</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label>Points</label>
-                                <input type="number" name="points" id="updatePoints" class="form-control" min="0">
-                            </div>
-                        </div>
-
-                        <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <form method="POST" action="admin_delete_user.php">
-                        <div class="modal-header">
-                            <h5 class="modal-title text-danger">Delete Account</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-
-                        <div class="modal-body">
-                            <input type="hidden" name="user_id" id="deleteUserId">
-                            <p>Are you sure you want to delete <strong id="deleteUserName"></strong>?</p>
-                        </div>
-
-                        <div class="modal-footer">
-                            <button type="submit" class="btn btn-danger">Yes, Delete</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
     <?php endif; ?>
 
-    <script>
-    document.getElementById('updateUserModal').addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        document.getElementById('updateUserId').value = button.dataset.userId;
-        document.getElementById('updateFirstName').value = button.dataset.firstName;
-        document.getElementById('updateLastName').value = button.dataset.lastName;
-        document.getElementById('updateEmail').value = button.dataset.email;
-        document.getElementById('updateRole').value = button.dataset.role;
-        document.getElementById('updatePoints').value = button.dataset.points;
-    });
-
-    document.getElementById('deleteUserModal').addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        document.getElementById('deleteUserId').value = button.dataset.userId;
-        document.getElementById('deleteUserName').textContent = button.dataset.userName;
-    });
-    </script>
 </body>

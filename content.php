@@ -162,16 +162,16 @@ $progressPercent = $totalLessons > 0 ? (int) floor(($completedLessons / $totalLe
 </header>
 
 <body class="bg-body-tertiary">
-    <div class="container py-4">
-        <div class="mb-3">
+    <div class="container p-4 border border-primary rounded-3 bg-white my-4">
+        <div class="mb-3 bg-primary-subtle p-3 rounded-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-muted">Journey progress</span>
-                <span class="fw-semibold"><?= $progressPercent ?>%</span>
+                <span class="fw-semibold">Journey progress</span>
+                <span class="fw-semibold text-primary"><?= $progressPercent ?>%</span>
             </div>
-            <div class="progress" style="height: 8px">
+            <div class="progress mb-1" style="height: 7px">
                 <div class="progress-bar" style="width: <?= $progressPercent ?>%"></div>
             </div>
-            <small class="text-muted"><?= $completedLessons ?> of <?= $totalLessons ?> lessons complete</small>
+            <small><?= $completedLessons ?> of <?= $totalLessons ?> lessons complete</small>
         </div>
 
         <div class="my-3">
@@ -187,7 +187,7 @@ $progressPercent = $totalLessons > 0 ? (int) floor(($completedLessons / $totalLe
         </div>
 
         <?php if (!$isCompleted): ?>
-            <div class="border rounded-3 border-primary p-3 d-flex justify-content-between align-items-center">
+            <div class="rounded-3 p-3 d-flex justify-content-between align-items-center bg-primary-subtle">
                 <p class="m-0 p-0">Mark this step as complete to continue</p>
                 <form method="POST" action="lesson_toggle.php" class="m-0">
                     <input type="hidden" name="journey_id" value="<?= $journeyId ?>">
@@ -197,13 +197,13 @@ $progressPercent = $totalLessons > 0 ? (int) floor(($completedLessons / $totalLe
                 </form>
             </div>
         <?php else: ?>
-            <div class="border rounded-3 border-success p-3 d-flex justify-content-between align-items-center">
+            <div class="rounded-3 p-3 d-flex justify-content-between align-items-center bg-success-subtle">
                 <p class="m-0 p-0">Step Complete</p>
                 <form method="POST" action="lesson_toggle.php" class="m-0">
                     <input type="hidden" name="journey_id" value="<?= $journeyId ?>">
                     <input type="hidden" name="lesson_id" value="<?= $currentLessonId ?>">
                     <input type="hidden" name="action" value="undo">
-                    <button class="btn btn-outline-danger">Undo</button>
+                    <button class="btn btn-success">Undo</button>
                 </form>
             </div>
         <?php endif; ?>

@@ -133,43 +133,43 @@ $nextLevelPoints = $levelInfo['points_to_next'];
 <body class="bg-body-tertiary">
     <div class="container py-4">
         <div class="d-flex justify-content-end mb-3">
-            <button type="button" class="btn btn-primary" onclick="exportReport()">
+            <button type="button" class="btn btn-secondary" onclick="exportReport()">
                 <i class="fa-solid fa-file-export"></i> Export to PDF
             </button>
         </div>
 
         <div id="reportArea">
-            <div class="border rounded-3 border-primary p-3 text-center bg-white">
-                <i class="fa-solid fa-star mb-2"></i>
+            <div class="border rounded-3 p-4 text-center bg-primary text-white">
+                <i class="fa-solid fa-star mb-2 h4"></i>
                 <h2><?= (int) $points ?></h2>
                 <span>Total Points</span>
             </div>
 
             <div class="d-flex gap-3 my-3">
-                <div class="border rounded-3 border-primary p-3 w-50 bg-white">
-                    <i class="fa-solid fa-arrow-trend-up mb-2"></i>
+                <div class="border rounded-3 p-4 w-50 bg-success text-white">
+                    <i class="fa-solid fa-arrow-trend-up mb-2 h4"></i>
                     <h3>Top <?= $topPercent ?>%</h3>
                     <span>Ahead of <?= $aheadPercent ?>% of users</span>
                 </div>
-                <div class="border rounded-3 border-primary p-3 w-50 bg-white">
-                    <i class="fa-solid fa-shapes mb-2"></i>
+                <div class="border rounded-3 p-4 w-50 bg-warning text-white">
+                    <i class="fa-solid fa-shapes mb-2 h4"></i>
                     <h3><?= (int) $activeAreas ?></h3>
                     <span>Active Areas</span>
                 </div>
             </div>
 
-            <div class="border rounded-3 border-primary p-3 bg-white">
+            <div class="border rounded-3 border-primary p-4 bg-white">
                 <div class="d-flex gap-3 align-items-center">
-                    <div class="rounded-3 bg-primary d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
-                        <i class="fa-solid fa-trophy text-white"></i>
+                    <div class="rounded-3 bg-primary-subtle d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
+                        <i class="fa-solid fa-trophy text-primary h5 m-0"></i>
                     </div>
                     <div>
-                        <h3 class="mb-0"><?= htmlspecialchars($levelInfo['name']) ?></h3>
+                        <h4 class="mb-0 text-primary"><?= htmlspecialchars($levelInfo['name']) ?></h4>
                         <span class="text-muted small">Current Level</span>
                     </div>
                 </div>
 
-                <div class="mt-3 mb-2">
+                <div class="mt-4 mb-2">
                     <p class="m-0">
                         Progress to <?= htmlspecialchars($levelInfo['next_name'] ?? $levelInfo['name']) ?>
                         <span>
@@ -183,71 +183,80 @@ $nextLevelPoints = $levelInfo['points_to_next'];
                 </div>
             </div>
 
-            <div class="border rounded-3 border-primary p-3 bg-white mt-3">
+            <div class="border rounded-3 border-primary p-4 bg-white mt-3">
                 <div class="d-flex flex-column align-items-center">
                     <div class="d-flex gap-2 align-items-center">
-                        <i class="fa-solid fa-ranking-star"></i>
+                        <i class="fa-solid fa-ranking-star text-primary"></i>
                         <h4 class="mb-0">Top Performers</h4>
                     </div>
 
                     <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+
                         <?php
                         $topThree = array_slice($leaderboard, 0, 3);
                         foreach ($topThree as $index => $user):
                             $rank = $index + 1;
                         ?>
-                            <div class="bg-warning rounded-3 p-3 d-flex flex-column align-items-center" style="min-width: 180px;">
-                                <div class="rounded-circle mt-4 mx-5 bg-primary d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
-                                    <i class="fa-solid fa-user text-white"></i>
+                            <div class="border rounded-3 p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-3" style="width: 320px;">
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <div class="rounded-circle bg-primary-subtle d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
+                                            <i class="fa-solid fa-user text-primary h5 m-0"></i>
+                                        </div>
+                                        <div>
+                                            <span><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></span><br>
+                                            <span class="text-muted"><?= htmlspecialchars(getLevelInfo((int) $user['points'])['name']) ?></span>
+                                        </div>
+                                    </div>
+
+                                    <span class="text-primary bg-primary-subtle rounded-pill small py-1 px-2 align-self-start">
+                                        Rank <?= $rank ?>
+                                    </span>
                                 </div>
-                                <h6 class="mt-2 mb-1">
-                                    <?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>
-                                </h6>
-                                <span class="text-muted small"><?= (int) $user['points'] ?> pts</span>
-                                <h1 class="mb-0 mt-3"><?= $rank ?></h1>
+                                <h1 class="mb-0"><?= (int) $user['points'] ?></h1>
+                                <span class="text-muted">POINTS</span>
                             </div>
                         <?php endforeach; ?>
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center mt-4 rounded-3 border border-primary p-3">
+                <div class="d-flex justify-content-between align-items-center mt-4 rounded-3 border p-3">
                     <div>
                         <span class="text-muted small">Total points</span>
                         <h5 class="mb-0 mt-1">You (<?= (int) $points ?> pts)</h5>
                     </div>
-                    <h6 class="text-muted">
+                    <h6 class="text-primary">
                         <?= $currentUserRank > 0 ? 'Rank ' . $currentUserRank : 'No rank yet' ?>
                     </h6>
                 </div>
 
                 <br>
-                <h6 class="text-muted">Player Ranks</h6>
+                <h6 class="text-muted">Player Ranks (Top 50)</h6>
                 <ul class="list-unstyled m-0">
                     <?php
                     $others = array_slice($leaderboard, 3, 7);
                     if (empty($others)):
                     ?>
-                        <li class="rounded-3 border border-primary p-3 text-center text-muted">No more users yet.</li>
+                        <li class="rounded-3 border p-3 text-center text-muted">No more users yet.</li>
                     <?php else: ?>
                         <?php foreach ($others as $index => $user): ?>
                             <?php $rank = $index + 4; ?>
-                            <li class="d-flex justify-content-between align-items-center rounded-3 border border-primary p-3 mb-3">
-                                <div class="d-flex gap-3 align-items-center">
-                                    <h3 class="m-0"><?= $rank ?></h3>
-                                    <div class="rounded-circle bg-primary d-flex justify-content-center align-items-center" style="width: 70px; height: 40px;">
-                                        <i class="fa-solid fa-user text-white"></i>
+                            <li class="d-flex justify-content-between align-items-center rounded-3 border p-3 mb-3">
+                                <div class="d-flex gap-4 align-items-center">
+                                    <div class="rounded-circle bg-secondary-subtle d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
+                                        <h5 class="text-secondary m-0"><?= $rank ?></h5>
                                     </div>
-                                    <div class="w-100">
-                                        <h6 class="mb-1"><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></h6>
-                                        <span class="text-muted small">
-                                            <?= htmlspecialchars(getLevelInfo((int) $user['points'])['name']) ?>
-                                        </span>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <div class="rounded-circle bg-primary-subtle d-flex justify-content-center align-items-center" style="width: 50px; height: 50px">
+                                            <i class="fa-solid fa-user text-primary h5 m-0"></i>
+                                        </div>
+                                        <div>
+                                            <span><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></span><br>
+                                            <span class="text-muted"><?= htmlspecialchars(getLevelInfo((int) $user['points'])['name']) ?></span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="d-flex gap-2 align-items-center">
-                                    <i class="fa-solid fa-star"></i>
-                                    <span><?= (int) $user['points'] ?> pts</span>
-                                </div>
+                                <span class="text-primary"><?= (int) $user['points'] ?> pts</span>
                             </li>
                         <?php endforeach; ?>
                     <?php endif; ?>
